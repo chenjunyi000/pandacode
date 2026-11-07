@@ -4,6 +4,7 @@
 import { failoverCardHtml, modelSwitchMarkerHtml, type Activity, type Bot, type FailoverAsk } from './bots';
 import { botAvatarHtml } from './bot-avatars';
 import { escape, icon } from './dom';
+import { t } from './i18n';
 import { formatDuration } from './turn-activity';
 
 type SavedMessage = { id: number; role: string; content: string; createdAt: number };
@@ -51,7 +52,7 @@ export function suggestions(role: string): string[] {
     [/support|help ?desk|customer|inbox|email/i, ['Draft a friendly reply to a customer question.', 'Sort these messages by urgency.']],
   ];
   const matched = topics.find(([pattern]) => pattern.test(role))?.[1] ?? ['Remember that I prefer short, direct answers.', 'Every weekday at 9, send me a summary of what changed.'];
-  return ['What can you help me with?', ...matched];
+  return ['What can you help me with?', ...matched].map(t);
 }
 
 /** An empty bot conversation: who it is, three things to ask, and small settings shortcuts. */

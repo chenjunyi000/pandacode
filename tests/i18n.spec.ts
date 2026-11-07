@@ -74,3 +74,91 @@ test('Chinese translation never rewrites user or agent content', async ({ page }
 
   await expect(content.locator('[data-i18n-test-content="true"]')).toHaveText('Settings and Search stay exactly as written.');
 });
+
+test('protected task, file, code, and reply content stays verbatim', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pandacode.locale', 'zh-CN'));
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  await page.evaluate(() => {
+    const host = document.createElement('section');
+    host.id = 'i18n-protected-content';
+    host.innerHTML = `
+      <span class="task-title">Explore the project</span>
+      <span class="file-preview-title">Token saver</span>
+      <div class="message-content">Settings and Search stay exactly as written.</div>
+      <pre><code>Settings = Search</code></pre>
+    `;
+    document.body.append(host);
+  });
+
+  const host = page.locator('#i18n-protected-content');
+  await expect(host.locator('.task-title')).toHaveText('Explore the project');
+  await expect(host.locator('.file-preview-title')).toHaveText('Token saver');
+  await expect(host.locator('.message-content')).toHaveText('Settings and Search stay exactly as written.');
+  await expect(host.locator('code')).toHaveText('Settings = Search');
+});
+
+test('model picker and token saver metadata are localized', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pandacode.locale', 'zh-CN'));
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  await page.locator('#model-picker-trigger').click();
+  const models = page.getByRole('dialog', { name: '智能体框架与模型', exact: true });
+  await expect(models).toBeVisible();
+  await expect(models.locator('[title*="上下文"]').first()).toHaveAttribute('title', /上下文 · .+模型示例元数据。/);
+
+  await page.keyboard.press('Escape');
+  await page.locator('.composer-saver-button').click();
+  const saver = page.getByRole('dialog', { name: 'Token 节省', exact: true });
+  await expect(saver).toBeVisible();
+  await expect(saver).toContainText('可节省');
+  await expect(saver).toContainText('尚未安装：启用后将执行安装');
+});
+
+test('workflow editor labels and preview are localized', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pandacode.locale', 'zh-CN'));
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  await page.locator('button[data-action="settings"]').click();
+  const settings = page.getByRole('region', { name: '设置', exact: true });
+  await settings.getByRole('tab', { name: '计划', exact: true }).click();
+  await expect(settings.getByLabel('关于计划', { exact: true })).toBeVisible();
+
+  await settings.locator('.schedules-new-workflow').click();
+  const workflow = settings.locator('.schedules-workflow');
+  await expect(workflow).toBeVisible();
+  await expect(workflow).toHaveAttribute('aria-label', '工作流');
+  await expect(workflow.locator('.workflow-steps')).toHaveAttribute('aria-label', '步骤');
+  await expect(workflow.getByRole('button', { name: '添加步骤', exact: true })).toBeVisible();
+  await expect(workflow.locator('[data-remove-step="0"]')).toHaveAttribute('aria-label', '移除第 1 步');
+  await expect(workflow.locator('.workflow-preview')).toContainText('每一步都在上一步成功时执行');
+});
+
+test('command palette localizes commands without rewriting task titles', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pandacode.locale', 'zh-CN'));
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  await page.locator('button[data-action="search"]').click();
+  const palette = page.getByRole('dialog', { name: '前往任意位置', exact: true });
+  await expect(palette).toBeVisible();
+  await expect(palette.getByRole('textbox', { name: '搜索任务和命令', exact: true })).toBeVisible();
+  await expect(palette.getByRole('button', { name: /新建任务/ })).toBeVisible();
+  await expect(palette.locator('#command-results')).toContainText('Explore the project');
+});
+
+test('bot presets display and fill Chinese values', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pandacode.locale', 'zh-CN'));
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+  await page.locator('button[data-action="toggle-bots-view"]').click();
+  await page.locator('[data-action="new-bot-menu"]').first().click();
+  await page.locator('[data-action="new-bot"]').first().click();
+
+  const dialog = page.getByRole('dialog', { name: '新建机器人', exact: true });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: '推荐模板', exact: true })).toBeVisible();
+  await dialog.locator('[data-suggestion="research"]').click();
+  await expect(dialog.locator('input[name="name"]')).toHaveValue('研究员');
+  await expect(dialog.locator('textarea[name="purpose"]')).toHaveValue(/使用网络和此电脑上的文件研究我提出的问题/);
+  await expect(dialog.getByRole('button', { name: '创建机器人', exact: true })).toBeVisible();
+});
