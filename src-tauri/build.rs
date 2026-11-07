@@ -9,8 +9,12 @@ fn main() {
     // still resolves version 6 on the first call.
     #[cfg(windows)]
     {
-        println!("cargo:rustc-link-arg=/DELAYLOAD:comctl32.dll");
-        println!("cargo:rustc-link-arg=delayimp.lib");
+        // `/DELAYLOAD` and delayimp.lib are MSVC linker options. The GNU toolchain
+        // uses its own import libraries and rejects them during the final link.
+        if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+            println!("cargo:rustc-link-arg=/DELAYLOAD:comctl32.dll");
+            println!("cargo:rustc-link-arg=delayimp.lib");
+        }
     }
 
     panda_onnx();

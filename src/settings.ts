@@ -26,6 +26,7 @@ import type { AgentsDockPreferences } from './agents-dock';
 import { SECTIONS, type SettingsPage, type SettingsSection } from './settings-sections';
 import { mountRecommended } from './recommended-settings';
 import { enabled as turnChecksEnabled } from './turn-checks';
+import { getLocale, onLocaleChange, setLocale, type Locale } from './i18n';
 
 /** Panels that live elsewhere and are embedded here: each mounts into a host and returns its cleanup. */
 type Embed = (host: HTMLElement) => Promise<() => void>;
@@ -140,7 +141,7 @@ function sectionHtml(id: SettingsPage, options: SettingsOptions): string {
   const defaultName = options.providers.find(provider => provider.id === options.defaultProvider)?.name ?? options.defaultProvider;
   switch (id) {
     case 'recommended': return '<div id="recommended-settings"></div>';
-    case 'general': return `<div class="settings-group">${uiSizeControls()}${switchRow('compact-mode', 'Compact conversation', '', options.compact)}${switchRow('expand-tool-activity', 'Expand tool activity', '', options.activityExpanded)}</div>
+    case 'general': return `<div class="settings-group">${settingRow('Language', `<select id="language-select" class="settings-select" aria-label="Language"><option value="zh-CN"${getLocale() === 'zh-CN' ? ' selected' : ''}>简体中文</option><option value="en"${getLocale() === 'en' ? ' selected' : ''}>English</option></select>`, 'Applies immediately. You can switch back to English at any time.')}${uiSizeControls()}${switchRow('compact-mode', 'Compact conversation', '', options.compact)}${switchRow('expand-tool-activity', 'Expand tool activity', '', options.activityExpanded)}</div>
       <h3 class="settings-heading">Quick launcher</h3><div id="launcher-settings"></div><h3 class="settings-heading">Running agents widget</h3><div id="agents-dock-settings"></div>${options.projects ? '<h3 class="settings-heading">Projects</h3><div id="projects-settings" class="settings-group"></div>' : ''}`;
     case 'appearance': return `<div class="settings-group">
         ${settingRow('Theme', `<button type="button" class="secondary-button" data-action="toggle-theme">${icon(options.theme === 'dark' ? 'sun' : 'moon')}Use ${options.theme === 'dark' ? 'light' : 'dark'}</button>`, 'Imported VS Code themes keep their own.')}
@@ -197,6 +198,14 @@ export function mountSettings(host: HTMLElement, options: SettingsOptions): Sett
   const cleanups: (() => void)[] = [];
   const mounted = new Set<SettingsPage>();
   let disposed = false;
+  const languageSelect = host.querySelector<HTMLSelectElement>('#language-select');
+  const languageChange = () => {
+    if (languageSelect) setLocale(languageSelect.value as Locale);
+  };
+  const stopLocaleChange = onLocaleChange(next => {
+    if (languageSelect && languageSelect.value !== next) languageSelect.value = next;
+  });
+  languageSelect?.addEventListener('change', languageChange);
 
   const list = host.querySelector<HTMLElement>('.provider-diagnostics')!;
   const refreshButton = host.querySelector<HTMLButtonElement>('.settings-refresh')!;
@@ -411,6 +420,7 @@ export function mountSettings(host: HTMLElement, options: SettingsOptions): Sett
       disposed = true; readinessCleanup.forEach(cleanup => cleanup());
       cleanups.forEach(cleanup => cleanup());
       host.removeEventListener('click', click); host.removeEventListener('keydown', keydown);
+      languageSelect?.removeEventListener('change', languageChange); stopLocaleChange();
       refreshButton.removeEventListener('click', refresh);
       host.replaceChildren(); host.classList.remove('settings-page-root'); delete host.dataset.updateTone;
     },

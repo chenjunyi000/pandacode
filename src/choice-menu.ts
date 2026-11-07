@@ -4,6 +4,7 @@ import { providerLogo } from './provider-logos';
 import { showPopover, hidePopover } from './popover-motion';
 import { trackSegment } from './motion';
 import { infoMark } from './tooltip';
+import { t } from './i18n';
 
 /** Label plus detail up to this length fit on one row; longer details move behind an info mark. */
 const BRIEF_ROW = 48;
@@ -131,7 +132,9 @@ export function openChoiceMenu(options: ChoiceMenuOptions): () => void {
     items = []; matches = 0;
     let selected: ChoiceItem | undefined;
     for (const item of options.items) {
-      if (query && !item.label.toLocaleLowerCase().includes(query) && !item.description?.toLocaleLowerCase().includes(query)) continue;
+      const source = `${item.label}\n${item.description ?? ''}`.toLocaleLowerCase();
+      const translated = `${t(item.label)}\n${t(item.description ?? '')}`.toLocaleLowerCase();
+      if (query && !source.includes(query) && !translated.includes(query)) continue;
       matches++;
       if (items.length < 100) items.push({ ...item });
       if (item.selected) selected = item;
