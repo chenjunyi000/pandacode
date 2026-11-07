@@ -21,6 +21,7 @@ test('dynamic update and resize labels are localized', async ({ page }) => {
       <button type="button" aria-label="Claude Code update details">Guide</button>
       <button type="button" aria-label="Update Claude Code">Update</button>
       <div title="Resize sidebar · Double-click to reset"></div>
+      <span>Replied</span><span>took</span>
       <p>This installation is not managed by a supported updater. Follow the official installation guide to update it.</p>
     `;
     document.body.append(host);
@@ -31,6 +32,8 @@ test('dynamic update and resize labels are localized', async ({ page }) => {
   await expect(host.getByRole('button', { name: 'Claude Code 更新详情', exact: true })).toContainText('指南');
   await expect(host.getByRole('button', { name: '更新 Claude Code', exact: true })).toContainText('更新');
   await expect(host.locator('[title]')).toHaveAttribute('title', '调整侧边栏大小 · 双击重置');
+  await expect(host).toContainText('已回复');
+  await expect(host).toContainText('耗时');
   await expect(host).toContainText('此安装不受支持的更新器管理。请按照官方安装指南进行更新。');
 });
 
@@ -138,6 +141,7 @@ test('command palette localizes commands without rewriting task titles', async (
   await page.addInitScript(() => localStorage.setItem('pandacode.locale', 'zh-CN'));
   await page.goto('/', { waitUntil: 'domcontentloaded' });
 
+  await expect(page.locator('.task-title').filter({ hasText: 'Explore the project' })).toBeVisible();
   await page.locator('button[data-action="search"]').click();
   const palette = page.getByRole('dialog', { name: '前往任意位置', exact: true });
   await expect(palette).toBeVisible();
