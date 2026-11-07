@@ -1,3 +1,7 @@
+import { initializeI18n } from './i18n';
+
+initializeI18n();
+
 // Keep the launcher and menu bar popover isolated: importing main loads the full workspace and its listeners.
 const view = new URLSearchParams(location.search).get('view');
 if (view === 'launcher') {

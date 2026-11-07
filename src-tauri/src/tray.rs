@@ -38,8 +38,8 @@ pub(crate) fn setup(app: &AppHandle) -> tauri::Result<()> {
     let menu = Menu::with_items(
         app,
         &[
-            &MenuItem::with_id(app, "show", "Open PandaCode", true, None::<&str>)?,
-            &MenuItem::with_id(app, "quit", "Quit PandaCode", true, None::<&str>)?,
+            &MenuItem::with_id(app, "show", "打开 PandaCode", true, None::<&str>)?,
+            &MenuItem::with_id(app, "quit", "退出 PandaCode", true, None::<&str>)?,
         ],
     )?;
     TrayIconBuilder::with_id(ID)

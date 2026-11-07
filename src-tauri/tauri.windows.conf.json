@@ -1,0 +1,23 @@
+{
+  "bundle": {
+    "targets": [
+      "nsis"
+    ],
+    "shortDescription": "中文编程智能体工作区",
+    "longDescription": "PandaCode 是一个面向编程智能体的本地工作区，已适配简体中文界面。",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
+        "displayLanguageSelector": true
+      }
+    }
+  }
+}
