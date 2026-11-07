@@ -8,6 +8,7 @@ import { advertisedModelsOnly, modelChoices } from './model-catalog';
 import { connectInput, guideToggled } from './bots-connect';
 import { avatarPicker, botAvatarHtml, colorPicker, handleAvatarPicker } from './bot-avatars';
 import { age, renderPanel, panelClick, panelSubmit, panelChange, invalidateActivity, invalidateCapabilities, type PanelContext, type Tab } from './bots-panels';
+import { t } from './i18n';
 
 export { age };
 
@@ -137,6 +138,14 @@ export const SUGGESTIONS: { id: string; avatar: string; name: string; role: stri
   { id: 'monitor', avatar: 'panda:8', name: 'Monitor', role: 'Watches things and tells me when they change', purpose: 'Check the pages, feeds or commands I give you. Only message me when something meaningfully changed, with the before, the after and a link.', heartbeatMinutes: 60 },
   { id: 'writer', avatar: 'panda:3', name: 'Writer', role: 'Drafts and edits in my voice', purpose: 'Help me draft and edit posts, emails and docs. Match my tone, keep it tight, and offer one alternative for any line you change a lot.', heartbeatMinutes: 0 },
 ];
+
+/** Presets are content too: localize the card and the values it fills, while leaving user edits alone. */
+const localizedSuggestion = (item: typeof SUGGESTIONS[number]): typeof SUGGESTIONS[number] => ({
+  ...item,
+  name: t(item.name),
+  role: t(item.role),
+  purpose: t(item.purpose),
+});
 interface Draft { name: string; purpose: string; role: string; avatar: string; color: string; heartbeatMinutes: number; suggestion: string; provider: ProviderId | ''; model: string; reasoningEffort: string; }
 const newDraft = (): Draft => ({ name: '', purpose: '', role: '', avatar: 'panda:0', color: '', heartbeatMinutes: 0, suggestion: '', provider: '', model: '', reasoningEffort: '' });
 /** A soul.md is copied into the bot once; the file is never read again. */
@@ -302,7 +311,10 @@ export function mountBots(host: HTMLElement, options: BotsOptions): BotsView {
   function renderCreate(): string {
     const { provider, harness, model } = harnessControls(draft.provider, draft.model);
     const efforts = provider ? effortSelect(provider.id, draft.model || options.defaultModel(provider.id), draft.reasoningEffort) : '';
-    const cards = SUGGESTIONS.map(item => `<li><button type="button" class="bc-card" data-suggestion="${item.id}" aria-pressed="${item.id === draft.suggestion}">${botAvatarHtml(item.avatar, item.name, 'bc-card-avatar')}<b>${escape(item.name)}</b><small>${escape(item.role)}</small></button></li>`).join('');
+    const cards = SUGGESTIONS.map(source => {
+      const item = localizedSuggestion(source);
+      return `<li><button type="button" class="bc-card" data-suggestion="${item.id}" aria-pressed="${item.id === draft.suggestion}">${botAvatarHtml(item.avatar, item.name, 'bc-card-avatar')}<b>${escape(item.name)}</b><small>${escape(item.role)}</small></button></li>`;
+    }).join('');
     return `<div class="bots-create"><form class="bots-form bc-form" novalidate aria-label="New bot">
       <div class="bc-preview">${botAvatarHtml(draft.avatar, draft.name || 'Bot', 'bc-avatar', draft.color)}</div>
       ${colorPicker(draft.color)}${avatarPicker(draft.avatar, draft.color)}
@@ -541,7 +553,8 @@ export function mountBots(host: HTMLElement, options: BotsOptions): BotsView {
     const data = new FormData(form);
     const text = (name: string) => String(data.get(name) ?? '');
     const next = { ...draft, name: text('name'), purpose: text('purpose'), avatar: text('avatar') || draft.avatar, color: text('color'), provider: text('provider') as ProviderId, model: text('model'), reasoningEffort: text('reasoningEffort') };
-    const picked = SUGGESTIONS.find(item => item.id === next.suggestion);
+    const source = SUGGESTIONS.find(item => item.id === next.suggestion);
+    const picked = source ? localizedSuggestion(source) : null;
     draft = picked && picked.name === next.name.trim() && picked.purpose === next.purpose.trim() ? next : { ...next, suggestion: '', role: '', heartbeatMinutes: 0 };
   }
   function previewDraft(form: HTMLFormElement): void {
@@ -577,7 +590,7 @@ export function mountBots(host: HTMLElement, options: BotsOptions): BotsView {
     if (target.dataset.bot) { selected = target.dataset.bot; editing = null; confirming = null; if (detail?.bot.id !== selected) { detail = null; render(); } void load(); return; }
     if (target.dataset.section) { section = target.dataset.section as Nav; confirming = null; avatarOpen = false; render(); return; }
     if (target.dataset.suggestion) {
-      const picked = SUGGESTIONS.find(item => item.id === target.dataset.suggestion)!;
+      const picked = localizedSuggestion(SUGGESTIONS.find(item => item.id === target.dataset.suggestion)!);
       const form = pane.querySelector<HTMLFormElement>('.bc-form');
       if (form) readDraft(form);
       draft = { ...draft, name: picked.name, purpose: picked.purpose, role: picked.role, avatar: picked.avatar, color: '', heartbeatMinutes: picked.heartbeatMinutes, suggestion: picked.id };
